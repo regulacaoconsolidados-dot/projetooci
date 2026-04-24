@@ -1,53 +1,360 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-    <title>PAINEL OCI - MONITORAMENTO</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>PAINEL OCI - MONITORAMENTO HOSPITALAR</title>
     <style>
-        .progress-cell {
-            width: 150px;
-            height: 30px;
-            background: #f0f0f0;
-            border-radius: 15px;
-            position: relative;
-            text-align: center;
-            line-height: 30px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #e8f0fe 0%, #d9e4f5 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        #app {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 5px 12px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        /* Header área */
+        h1 {
+            background: linear-gradient(90deg, #005a8c 0%, #003d5c 100%);
+            color: white;
+            padding: 28px 32px;
+            margin: 0;
+            font-size: 1.9rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 3px solid #ffb347;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        h1::before {
+            content: "🏥";
+            font-size: 2rem;
+            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.2));
+        }
+
+        /* Painel de estatísticas rápido (adicional) */
+        .stats-ribbon {
+            background: #f9fafc;
+            padding: 16px 32px;
+            display: flex;
+            gap: 32px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 500;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 40px;
+            padding: 6px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #005a8c;
+            margin-right: 4px;
+        }
+
+        /* Filtros */
+        #filtros {
+            padding: 20px 32px;
+            background: white;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        #filtros select, #filtros input {
+            padding: 10px 18px;
+            border-radius: 48px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: all 0.2s;
+            cursor: pointer;
+            outline: none;
+            min-width: 180px;
+        }
+
+        #filtros select:hover, #filtros input:hover {
+            border-color: #3b82f6;
+        }
+
+        #filtros select:focus, #filtros input:focus {
+            border-color: #005a8c;
+            box-shadow: 0 0 0 3px rgba(0,90,140,0.2);
+        }
+
+        #busca {
+            flex: 1;
+            min-width: 220px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="%236b7280" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>');
+            background-repeat: no-repeat;
+            background-position: left 12px center;
+            background-size: 18px;
+            padding-left: 40px;
+        }
+
+        /* Container da tabela com rolagem horizontal responsiva */
+        .table-container {
+            overflow-x: auto;
+            padding: 0 0 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.85rem;
+            min-width: 900px;
+        }
+
+        th {
+            background: #f1f5f9;
+            padding: 16px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #1e293b;
+            border-bottom: 2px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            backdrop-filter: blur(2px);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #eef2f6;
+            vertical-align: middle;
+            background-color: white;
+            transition: background 0.1s ease;
+        }
+
+        tr:hover td {
+            background-color: #fafeff;
+        }
+
+        /* Estilos de Status célula da previsão */
+        .status-verde {
+            background-color: #dcfce7;
+            color: #15803d;
+            font-weight: 600;
+            border-radius: 40px;
+            text-align: center;
+            width: fit-content;
+            padding: 5px 14px;
+            display: inline-block;
+            font-size: 0.8rem;
+            box-shadow: inset 0 0 0 1px #bbf7d0;
+        }
+
+        .status-amarelo {
+            background-color: #fef9c3;
+            color: #854d0e;
+            font-weight: 600;
+            border-radius: 40px;
+            padding: 5px 14px;
+            display: inline-block;
+            font-size: 0.8rem;
+            box-shadow: inset 0 0 0 1px #fde047;
+        }
+
+        .status-vermelho {
+            background-color: #ffe4e2;
+            color: #b91c1c;
+            font-weight: 600;
+            border-radius: 40px;
+            padding: 5px 14px;
+            display: inline-block;
+            font-size: 0.8rem;
+            box-shadow: inset 0 0 0 1px #fecaca;
+        }
+
+        /* Componente de progresso refinado */
+        .progress-cell {
+            width: 140px;
+            height: 32px;
+            background: #eef2ff;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #4CAF50, #8BC34A);
-            border-radius: 15px;
+            background: linear-gradient(90deg, #2b9348, #55a630, #80b918);
+            border-radius: 20px;
+            transition: width 0.4s ease;
+            width: 0%;
+        }
+
+        .progress-text {
             position: absolute;
             top: 0;
             left: 0;
-            z-index: 1;
-        }
-        .progress-text {
-            position: relative;
-            z-index: 2;
-            color: white;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-weight: bold;
-            text-shadow: 1px 1px 2px black;
+            font-size: 0.75rem;
+            color: white;
+            text-shadow: 0px 1px 2px rgba(0,0,0,0.4);
+            z-index: 2;
+            letter-spacing: 0.3px;
         }
-        .status-verde { background-color: #4CAF50; color: white; }
-        .status-amarelo { background-color: #FFC107; color: black; }
-        .status-vermelho { background-color: #F44336; color: white; }
+
+        /* Ícones de status dos exames */
+        .icons-stack {
+            display: flex;
+            gap: 12px;
+            font-size: 1.3rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .icons-stack span {
+            cursor: default;
+            transition: transform 0.1s;
+            background: #f8fafc;
+            padding: 4px 8px;
+            border-radius: 30px;
+            font-size: 1rem;
+        }
+
+        .badge-exame {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #f1f5f9;
+            border-radius: 20px;
+            padding: 2px 10px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Badge de número de solicitação */
+        .solicitacao-badge {
+            font-family: monospace;
+            font-weight: 700;
+            background: #f1f5f9;
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        /* Rodapé minimalista */
+        .footer-note {
+            background: #f8fafc;
+            padding: 14px 32px;
+            font-size: 0.7rem;
+            text-align: right;
+            color: #5b6e8c;
+            border-top: 1px solid #e2edf2;
+            font-style: italic;
+        }
+
+        @media (max-width: 780px) {
+            body {
+                padding: 12px;
+            }
+            h1 {
+                font-size: 1.4rem;
+                padding: 18px 24px;
+            }
+            .stats-ribbon {
+                padding: 12px 20px;
+                gap: 12px;
+            }
+            #filtros {
+                padding: 16px 20px;
+            }
+            td, th {
+                padding: 10px 8px;
+            }
+        }
+
+        /* tooltip sutil */
+        [data-tooltip] {
+            position: relative;
+            cursor: help;
+        }
+        [data-tooltip]:before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 130%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0f172a;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            display: none;
+            z-index: 10;
+        }
+        [data-tooltip]:hover:before {
+            display: block;
+        }
     </style>
 </head>
 <body>
-    <div id="app">
-        <h1>🏥 PAINEL DE MONITORAMENTO OCI</h1>
-        <div id="filtros">
-            <select id="filtroEspecialidade">
-                <option value="">Todas Especialidades</option>
-            </select>
-            <select id="filtroStatus">
-                <option value="">Todos Status</option>
-                <option value="✅">Concluído</option>
-                <option value="⏳">Em Andamento</option>
-                <option value="❌">Falta</option>
-            </select>
-            <input type="text" id="busca" placeholder="🔍 Nº Solicitação ou Paciente">
-        </div>
+<div id="app">
+    <h1>PAINEL DE MONITORAMENTO OCI</h1>
+    <div class="stats-ribbon" id="statsHeader">
+        <div class="stat-card">📊 <span class="stat-number" id="totalAtivos">0</span> Em andamento</div>
+        <div class="stat-card">✅ <span class="stat-number" id="totalConcluidos">0</span> Concluídos</div>
+        <div class="stat-card">⚠️ <span class="stat-number" id="totalAtraso">0</span> Em atraso</div>
+        <div class="stat-card">🏥 <span class="stat-number" id="totalPacientes">0</span> Total pacientes</div>
+    </div>
+
+    <div id="filtros">
+        <select id="filtroEspecialidade">
+            <option value="">Todas Especialidades</option>
+        </select>
+        <select id="filtroStatus">
+            <option value="">Todos Status (Progresso)</option>
+            <option value="concluido">✅ Concluído (100%)</option>
+            <option value="andamento">⏳ Em Andamento (1-99%)</option>
+            <option value="falta">❌ Sem início / 0%</option>
+        </select>
+        <input type="text" id="busca" placeholder="🔍 Nº Solicitação, Prontuário ou Paciente">
+    </div>
+    
+    <div class="table-container">
         <table id="tabelaOCI">
             <thead>
                 <tr>
@@ -58,13 +365,277 @@
                     <th>Início</th>
                     <th>Progresso</th>
                     <th>Status Exames</th>
-                    <th>Previsão</th>
+                    <th>Previsão / Alerta</th>
                 </tr>
             </thead>
             <tbody id="corpoTabela">
+                <tr><td colspan="8" style="text-align:center">Carregando dados do monitoramento...</td></tr>
             </tbody>
         </table>
     </div>
-    <script src="script.js"></script>
+    <div class="footer-note">
+        ⏱️ Dados atualizados em tempo real • OCI Cuidados Integrados • Prazo oncológico: 30d | Demais especialidades: 60d
+    </div>
+</div>
+
+<script>
+    // ================== CONFIGURAÇÕES GLOBAIS ==================
+    // Substitua pelos seus dados reais do Google Sheets (ID e API Key)
+    const SHEET_ID = 'SEU_ID_AQUI';          // Ex: "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+    const API_KEY = 'SUA_API_KEY';            // Chave do Google Cloud (habilitar Sheets API)
+    const RANGE = 'BASE_CONSOLIDADA!A:N';     // colunas A até N
+
+    // Dados em memória
+    let dadosOriginais = [];      // armazena todas as linhas cruas (arrays)
+    let especialidadesSet = new Set();
+
+    // Elementos DOM
+    const tbody = document.getElementById('corpoTabela');
+    const filtroEspecialidade = document.getElementById('filtroEspecialidade');
+    const filtroStatus = document.getElementById('filtroStatus');
+    const buscaInput = document.getElementById('busca');
+
+    // stats
+    const totalAtivosSpan = document.getElementById('totalAtivos');
+    const totalConcluidosSpan = document.getElementById('totalConcluidos');
+    const totalAtrasoSpan = document.getElementById('totalAtraso');
+    const totalPacientesSpan = document.getElementById('totalPacientes');
+
+    // Helper: calcular previsão baseada na especialidade e progresso
+    function calcularPrevisao(linha) {
+        const progresso = parseInt(linha[13]) || 0;
+        if (progresso >= 100) return { texto: "✅ CONCLUÍDO", tipo: "verde" };
+        
+        const especialidade = (linha[3] || "").toUpperCase();
+        const prazoMaximo = especialidade.includes("ONCO") ? 30 : 60;
+        const dataInicioStr = linha[5];
+        if (!dataInicioStr) return { texto: "🟡 SEM DATA", tipo: "amarelo" };
+        
+        const dataInicio = new Date(dataInicioStr);
+        if (isNaN(dataInicio.getTime())) return { texto: "📅 DATA INVÁLIDA", tipo: "amarelo" };
+        
+        const hoje = new Date();
+        const diasCorridos = Math.floor((hoje - dataInicio) / (1000 * 60 * 60 * 24));
+        
+        if (diasCorridos > prazoMaximo) return { texto: `🔴 ATRASADO (${diasCorridos}d)`, tipo: "vermelho" };
+        if (diasCorridos > prazoMaximo * 0.8) return { texto: `🟡 ATENÇÃO - ${prazoMaximo - diasCorridos} dias restantes`, tipo: "amarelo" };
+        return { texto: `🟢 DENTRO PRAZO (${prazoMaximo - diasCorridos}d)`, tipo: "verde" };
+    }
+
+    // Gera mini blocos de status dos exames baseado nas colunas Exame1 (linha[9]) e Exame2 (linha[12])
+    function renderStatusExames(linha) {
+        const statusExame1 = linha[9] || "⏳ Pendente";
+        const statusExame2 = linha[12] || "⏳ Pendente";
+        const nomeExame1 = linha[7] || "Exame1";
+        const nomeExame2 = linha[10] || "Exame2";
+        // Simbolizar status
+        const icone1 = statusExame1.includes("✅") || statusExame1 === "Concluído" ? "✅" : (statusExame1.includes("⏳") ? "⏳" : "❌");
+        const icone2 = statusExame2.includes("✅") || statusExame2 === "Concluído" ? "✅" : (statusExame2.includes("⏳") ? "⏳" : "❌");
+        return `<div class="icons-stack">
+                    <span class="badge-exame" data-tooltip="${nomeExame1}: ${statusExame1}">${icone1} ${nomeExame1.substring(0,12)}</span>
+                    <span class="badge-exame" data-tooltip="${nomeExame2}: ${statusExame2}">${icone2} ${nomeExame2.substring(0,12)}</span>
+                </div>`;
+    }
+
+    // Atualizar estatísticas rápidas
+    function atualizarEstatisticas(dadosFiltrados) {
+        // dadosFiltrados são os arrays completos exibidos atualmente? 
+        // Vamos calcular sobre o dataset original após filtro (usar dadosFiltradosGlobal)
+        if (!dadosOriginais.length) return;
+        
+        // Aplica os filtros novamente para contar? melhor usar a mesma lógica de filtragem sem duplicar, 
+        // faremos função auxiliar getFilteredData, mas usaremos dados atualmente na tabela.
+        // Por performance usamos dadosOriginais filtrados manualmente.
+        let dataSource = aplicarFiltrosEmArray(dadosOriginais);
+        const total = dataSource.length;
+        const ativos = dataSource.filter(row => (parseInt(row[13]) || 0) < 100 && (parseInt(row[13]) || 0) > 0).length;
+        const concluidos = dataSource.filter(row => (parseInt(row[13]) || 0) >= 100).length;
+        const atrasados = dataSource.filter(row => {
+            if ((parseInt(row[13]) || 0) >= 100) return false;
+            const esp = (row[3] || "").toUpperCase();
+            const prazo = esp.includes("ONCO") ? 30 : 60;
+            const dataInicio = new Date(row[5]);
+            if (isNaN(dataInicio)) return false;
+            const dias = Math.floor((new Date() - dataInicio) / (1000*60*60*24));
+            return dias > prazo;
+        }).length;
+        
+        totalPacientesSpan.innerText = total;
+        totalAtivosSpan.innerText = ativos;
+        totalConcluidosSpan.innerText = concluidos;
+        totalAtrasoSpan.innerText = atrasados;
+    }
+    
+    // Função para aplicar todos os filtros (retorna novo array)
+    function aplicarFiltrosEmArray(dados) {
+        const especialidadeVal = filtroEspecialidade.value;
+        const statusVal = filtroStatus.value;
+        const buscaText = buscaInput.value.trim().toLowerCase();
+        
+        return dados.filter(linha => {
+            // especialidade
+            if (especialidadeVal && linha[3] !== especialidadeVal) return false;
+            
+            // status progresso
+            const progresso = parseInt(linha[13]) || 0;
+            if (statusVal === "concluido" && progresso < 100) return false;
+            if (statusVal === "andamento" && (progresso >= 100 || progresso === 0)) return false;
+            if (statusVal === "falta" && progresso !== 0) return false;
+            
+            // busca texto (número solicitação, prontuario, paciente nome)
+            if (buscaText) {
+                const numSolic = (linha[0] || "").toString().toLowerCase();
+                const prontuario = (linha[1] || "").toString().toLowerCase();
+                const paciente = (linha[2] || "").toString().toLowerCase();
+                if (!numSolic.includes(buscaText) && !prontuario.includes(buscaText) && !paciente.includes(buscaText)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }
+    
+    function atualizarTabela() {
+        if (!dadosOriginais.length) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">⚠️ Nenhum dado carregado. Verifique a planilha/API.</td></tr>';
+            return;
+        }
+        
+        const dadosFiltrados = aplicarFiltrosEmArray(dadosOriginais);
+        
+        if (dadosFiltrados.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">🔍 Nenhum resultado com os filtros aplicados.</td></tr>';
+            atualizarEstatisticas([]);
+            return;
+        }
+        
+        // Montar linhas
+        let htmlRows = '';
+        for (let linha of dadosFiltrados) {
+            const numSolicitacao = linha[0] || '---';
+            const prontuario = linha[1] || '---';
+            const paciente = linha[2] || '---';
+            const especialidade = linha[3] || '---';
+            const dataInicio = linha[5] || '---';
+            let progresso = parseInt(linha[13]);
+            if (isNaN(progresso)) progresso = 0;
+            
+            // previsão
+            const previsaoObj = calcularPrevisao(linha);
+            let statusPrevisaoClass = '';
+            if (previsaoObj.tipo === 'verde') statusPrevisaoClass = 'status-verde';
+            else if (previsaoObj.tipo === 'amarelo') statusPrevisaoClass = 'status-amarelo';
+            else statusPrevisaoClass = 'status-vermelho';
+            
+            // icones exames
+            const examesHtml = renderStatusExames(linha);
+            
+            // Montar linha
+            htmlRows += `
+                <tr>
+                    <td><span class="solicitacao-badge">${numSolicitacao}</span></td>
+                    <td><strong>${prontuario}</strong></td>
+                    <td style="font-weight:500;">${paciente}</td>
+                    <td>${especialidade}</td>
+                    <td>${dataInicio}</td>
+                    <td>
+                        <div class="progress-cell">
+                            <div class="progress-fill" style="width: ${progresso}%;"></div>
+                            <span class="progress-text">${progresso}%</span>
+                        </div>
+                    </td>
+                    <td>${examesHtml}</td>
+                    <td><div class="${statusPrevisaoClass}">${previsaoObj.texto}</div></td>
+                </tr>
+            `;
+        }
+        tbody.innerHTML = htmlRows;
+        atualizarEstatisticas(dadosFiltrados);
+    }
+    
+    // popular dropdown de especialidades únicas
+    function popularFiltroEspecialidades() {
+        const especialidades = [...new Set(dadosOriginais.map(linha => linha[3]).filter(esp => esp && esp.trim() !== ""))];
+        especialidades.sort();
+        filtroEspecialidade.innerHTML = '<option value="">Todas Especialidades</option>';
+        especialidades.forEach(esp => {
+            const option = document.createElement('option');
+            option.value = esp;
+            option.textContent = esp;
+            filtroEspecialidade.appendChild(option);
+        });
+    }
+    
+    // Listener para mudanças nos filtros
+    function bindEvents() {
+        filtroEspecialidade.addEventListener('change', () => atualizarTabela());
+        filtroStatus.addEventListener('change', () => atualizarTabela());
+        buscaInput.addEventListener('input', () => atualizarTabela());
+    }
+    
+    // Carregar dados via Google Sheets API (mantendo a estrutura do script original)
+    async function carregarDados() {
+        try {
+            // Simulação caso queira testar: descomente se não tiver API key - modo demo
+            // Para usar o ambiente real, certifique-se que SHEET_ID e API_KEY estejam corretos.
+            if (SHEET_ID === 'SEU_ID_AQUI' || API_KEY === 'SUA_API_KEY') {
+                // Fallback demonstrativo com dados simulados para apresentação do design
+                console.warn("⚠️ Usando dados de demonstração. Configure SHEET_ID e API_KEY.");
+                carregarDadosMock();
+                return;
+            }
+            
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            const valores = data.values;
+            if (!valores || valores.length < 2) throw new Error("Planilha sem dados");
+            const cabecalho = valores[0];
+            const linhas = valores.slice(1);
+            dadosOriginais = linhas.map(linha => {
+                // garantir que tenha pelo menos 14 colunas
+                while(linha.length < 14) linha.push('');
+                return linha;
+            });
+            popularFiltroEspecialidades();
+            atualizarTabela();
+        } catch (error) {
+            console.error("Erro ao carregar planilha:", error);
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#b91c1c;">❌ Erro ao carregar dados: ${error.message}. Verifique ID/API/Configuração.</td></tr>`;
+            carregarDadosMock(); // fallback amigável
+        }
+    }
+    
+    // Dados mock para demonstração automática (útil para testes visuais)
+    function carregarDadosMock() {
+        dadosOriginais = [
+            ["SOL-1001", "P12345", "MARIA FERNANDES", "ONCOLOGIA", "OCI789", "2025-02-10", "✅ Iniciado", "Hemograma", "2025-02-12", "✅ Concluído", "Ressonância", "2025-02-20", "⏳ Agendado", "45"],
+            ["SOL-1002", "P67890", "JOAO SILVA", "CARDIOLOGIA", "OCI101", "2025-01-05", "⏳ Aguardando", "Ecodoppler", "2025-01-20", "✅ OK", "Holter", "2025-02-01", "✅ OK", "100"],
+            ["SOL-1003", "P11223", "ANA BEATRIZ", "ONCOLOGIA", "OCI205", "2024-12-01", "✅ Realizado", "Biópsia", "2024-12-10", "✅", "PET-CT", "2024-12-28", "✅", "100"],
+            ["SOL-1004", "P44556", "CARLOS MENDES", "ORTOPEDIA", "OCI309", "2025-02-20", "🟡 Aguard. laudo", "Ressonância", "2025-02-25", "⏳", "Raio-X", "2025-02-22", "✅", "20"],
+            ["SOL-1005", "P77889", "RENATA LIMA", "ONCOLOGIA", "OCI402", "2025-01-18", "✅", "Ultrassom", "2025-01-25", "✅", "Tomografia", "2025-02-05", "✅", "100"],
+            ["SOL-1006", "P99001", "LUCAS ALMEIDA", "NEUROLOGIA", "OCI555", "2025-01-30", "🔴 Atrasado", "Eletroneuromiografia","2025-02-10","⏳ Pendente","Ressonância","","❌ Não realiz","0"],
+            ["SOL-1007", "P33456", "FERNANDA SOUZA", "ONCOLOGIA", "OCI678", "2025-02-01", "⏳", "Marcadores", "2025-02-05","✅", "PET-CT", "2025-02-28","⏳", "25"]
+        ];
+        // garantir progresso como número em cada linha[13] e dados mínimos
+        dadosOriginais = dadosOriginais.map(row => {
+            while(row.length < 14) row.push('');
+            let prog = parseInt(row[13]);
+            if (isNaN(prog)) row[13] = "0";
+            else row[13] = prog.toString();
+            return row;
+        });
+        popularFiltroEspecialidades();
+        atualizarTabela();
+    }
+    
+    // init
+    function init() {
+        bindEvents();
+        carregarDados();
+    }
+    init();
+</script>
 </body>
 </html>
